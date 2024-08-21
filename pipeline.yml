@@ -1,0 +1,143 @@
+resources:
+  - name: getappdata
+    type: git
+    source:
+      uri: "https://github.com/SamuraiDaito/Concourse.git"
+      branch: main
+
+jobs:
+  - name: fetch-secrets-and-run-script
+    plan:
+      - get: getappdata
+        trigger: true
+
+      - task: fetch-secrets
+        config:
+          platform: linux
+          image_resource:
+            type: docker-image
+            source:
+              repository: hashicorp/vault
+              tag: latest
+          outputs:
+            - name: secrets-output
+          run:
+            path: sh
+            args:
+              - -c
+              - |
+                export VAULT_ADDR='http://192.168.3.109:8200'
+                export VAULT_TOKEN='abcd1234'
+                Email=$(vault kv get -field=Email secret/screener)
+                Password=$(vault kv get -field=Password secret/screener)
+                echo "export EMAIL=$Email" > secrets-output/secrets.sh
+                echo "export PASSWORD=$Password" >> secrets-output/secrets.sh
+                chmod +x secrets-output/secrets.sh
+                ls -l secrets-output
+                cat secrets-output/secrets.sh
+
+      # - task: run-login-script
+      #   config:
+      #     platform: linux
+      #     image_resource:
+      #       type: docker-image
+      #       source:
+      #         repository: python
+      #         tag: 3.9
+      #     inputs:
+      #       - name: getappdata
+      #       - name: secrets-output
+      #     run:
+      #       path: sh
+      #       args:
+      #         - -c
+      #         - |
+      #           pip install beautifulsoup4 requests pandas
+      #           . secrets-output/secrets.sh
+      #           python getappdata/login.py
+
+      # - task: scrape-reliance-data
+      #   config:
+      #     platform: linux
+      #     image_resource:
+      #       type: docker-image
+      #       source:
+      #         repository: python
+      #         tag: 3.9
+      #     inputs:
+      #       - name: getappdata
+      #       - name: secrets-output
+      #     run:
+      #       path: sh
+      #       args:
+      #         - -c
+      #         - |
+      #           pip install beautifulsoup4 requests pandas
+      #           . secrets-output/secrets.sh
+      #           python getappdata/scrape_reliance.py
+      #           # Ensure the output CSV is placed in the data-output directory
+
+      # - task: insert-data
+      #   config:
+      #     platform: linux
+      #     image_resource:
+      #       type: docker-image
+      #       source:
+      #         repository: python
+      #         tag: 3.9
+      #     inputs:
+      #       - name: getappdata
+      #       - name: secrets-output
+      #     run:
+      #       path: sh
+      #       args:
+      #         - -c
+      #         - |
+      #           pip install beautifulsoup4 requests pandas psycopg2
+      #           . secrets-output/secrets.sh
+      #           python getappdata/insert_data.py
+
+      - task: display-csv
+        config:
+          platform: linux
+          image_resource:
+            type: docker-image
+            source:
+              repository: python
+              tag: 3.9
+          inputs:
+            - name: getappdata
+            - name: secrets-output
+          outputs:
+            - name: profit_loss_data
+          run:
+            path: /bin/sh
+            args:
+              - -c
+              - |
+                pip install beautifulsoup4 requests pandas 
+                . secrets-output/secrets.sh
+                python getappdata/create_csv.py
+                echo "Displaying contents of CSV file:"
+                cat profit_loss_data/profit_loss_data.csv
+
+      - task: insert-csv-to-db
+        config:
+          platform: linux
+          image_resource:
+            type: docker-image
+            source:
+              repository: python
+              tag: 3.9
+          inputs:
+            - name: getappdata
+            - name: secrets-output
+            - name: profit_loss_data
+          run:
+            path: /bin/sh
+            args:
+              - -c
+              - |
+                pip install pandas sqlalchemy psycopg2
+                . secrets-output/secrets.sh
+                python getappdata/csvtodatabase.py
