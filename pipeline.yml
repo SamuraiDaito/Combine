@@ -2,7 +2,7 @@ resources:
   - name: getappdata
     type: git
     source:
-      uri: "https://github.com/SamuraiDaito/Concourse.git"
+      uri: "https://github.com/SamuraiDaito/Combine.git"
       branch: main
 
 jobs:
