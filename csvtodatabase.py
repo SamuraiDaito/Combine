@@ -90,10 +90,10 @@ try:
 except Exception as e:
     print(f"Error processing data or inserting into PostgreSQL: {e}"
     # Handle any remaining missing values or inappropriate data
-    df_pivoted = df_pivoted.fillna(0)  # Example: Fill missing values with 0, adjust as needed
+    df_transposed = df_transposed.fillna(0)  # Example: Fill missing values with 0, adjust as needed
 
     # Write DataFrame to PostgreSQL
-    df_pivoted.to_sql('relianceprofitlost', engine, if_exists='replace', index=False)
+    df_transposed.to_sql('relianceprofitlost', engine, if_exists='replace', index=False)
 
     print("Data inserted successfully into PostgreSQL!")
 except Exception as e:
