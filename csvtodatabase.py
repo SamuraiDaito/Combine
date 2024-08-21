@@ -61,7 +61,7 @@ def clean_data(value):
     return value
 
 try:
-    # Read the CSV file into a DataFrame, handling the comma as a decimal separator
+    # Read the CSV file into a DataFrame
     df = pd.read_csv(csv_file_path, thousands=',', skipinitialspace=True)
 
     # Remove any leading/trailing spaces from column names
@@ -77,12 +77,18 @@ try:
     # Convert columns to appropriate types
     df[df.columns[1:]] = df[df.columns[1:]].astype(float)
 
-    # Handle any remaining missing values or inappropriate data
-    df = df.fillna(0)  # Example: Fill missing values with 0, adjust as needed
+    # Reshape DataFrame to have 'Sales' and 'Expenses' as columns
+    df_melted = pd.melt(df, id_vars=[df.columns[0]], var_name='year', value_name='value')
+
+    # Create a 'type' column to specify 'Sales' or 'Expenses'
+    df_melted['type'] = df_melted[df_melted.columns[0]]
+
+    # Rename columns
+    df_melted = df_melted[['year', 'type', 'value']]
 
     # Write DataFrame to PostgreSQL
-    df.to_sql('relianceprofitlost', engine, if_exists='replace', index=False)
+    df_melted.to_sql('relianceprofitlost', engine, if_exists='replace', index=False)
 
     print("Data inserted successfully into PostgreSQL!")
 except Exception as e:
-    print(f"Database connection failed: {e}")
+    print(f"Error processing data or inserting into PostgreSQL: {e}")
