@@ -61,24 +61,34 @@ def clean_data(value):
     return value
 
 try:
-    # Read the CSV file into a DataFrame
+    # Read the CSV file into a DataFrame, handling the comma as a decimal separator
     df = pd.read_csv(csv_file_path, thousands=',', skipinitialspace=True)
 
     # Remove any leading/trailing spaces from column names
     df.columns = [col.strip() for col in df.columns]
 
+    # Ensure the first column is treated as text and other columns are treated as numeric
+    df.iloc[:, 0] = df.iloc[:, 0].astype(str)  # Convert the first column to string
+
     # Apply the cleaning function to all columns
-    df.iloc[:, 1] = df.iloc[:, 1].apply(clean_data)  # Clean the values column
+    for col in df.columns[1:]:  # Skip the first column as it's text
+        df[col] = df[col].apply(clean_data)
 
-    # Pivot the DataFrame
-    df_pivoted = df.pivot_table(index=df.columns[0], columns=df.columns[1], values=df.columns[2], aggfunc='sum')
+    # Convert columns to appropriate types
+    df[df.columns[1:]] = df[df.columns[1:]].astype(float)
 
-    # Reset index to convert multi-index DataFrame to regular DataFrame
-    df_pivoted = df_pivoted.reset_index()
+    # Handle any remaining missing values or inappropriate data
+    df = df.fillna(0)  # Example: Fill missing values with 0, adjust as needed
 
-    # Rename columns to ensure they are suitable for SQL insertion
-    df_pivoted.columns.name = None  # Remove the columns' name if exists
+    # Transpose the DataFrame
+    df_transposed = df.transpose()
 
+    # Write Transposed DataFrame to PostgreSQL
+    df_transposed.to_sql('relianceprofitlost', engine, if_exists='replace', index=False)
+
+    print("Data inserted successfully into PostgreSQL!")
+except Exception as e:
+    print(f"Error processing data or inserting into PostgreSQL: {e}"
     # Handle any remaining missing values or inappropriate data
     df_pivoted = df_pivoted.fillna(0)  # Example: Fill missing values with 0, adjust as needed
 
