@@ -32,7 +32,7 @@
 
 import pandas as pd
 from sqlalchemy import create_engine
-import os
+import numpy as np
 
 # Database connection parameters
 db_name = "concourse"
@@ -53,7 +53,14 @@ def clean_data(value):
     if isinstance(value, str):
         value = value.replace("+", "").replace("%", "").replace(",", "").strip()
         # Convert to integer if it's a number, otherwise return None or appropriate value
-        return int(value) if value.isdigit() else None
+        if value.isdigit():
+            return int(value)
+        else:
+            try:
+                # Try converting to float, which handles decimal values
+                return float(value)
+            except ValueError:
+                return None
     return value
 
 try:
@@ -63,9 +70,18 @@ try:
     # Remove any leading/trailing spaces from column names
     df.columns = [col.strip() for col in df.columns]
 
-    # Apply the cleaning function to all numeric columns
-    for col in df.columns[1:]:  # Skipping 'Parameters' column
+    # Apply the cleaning function to all columns
+    for col in df.columns:
         df[col] = df[col].apply(clean_data)
+
+    # Handle specific column types
+    # EPS in Rs column may have float values, so let's ensure it's treated as float
+    if 'EPS in Rs' in df.columns:
+        df['EPS in Rs'] = df['EPS in Rs'].astype(float)
+
+    # Drop columns if necessary or handle data types as per requirements
+    # Example: Drop rows where 'EPS in Rs' is completely missing if needed
+    df = df.dropna(subset=['EPS in Rs'])
 
     # Write DataFrame to PostgreSQL
     df.to_sql('relianceprofitlost', engine, if_exists='replace', index=False)
