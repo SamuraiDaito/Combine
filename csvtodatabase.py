@@ -77,18 +77,22 @@ try:
     # Convert columns to appropriate types
     df[df.columns[1:]] = df[df.columns[1:]].astype(float)
 
-    # Reshape DataFrame to have 'Sales' and 'Expenses' as columns
-    df_melted = pd.melt(df, id_vars=[df.columns[0]], var_name='year', value_name='value')
+    # Pivot DataFrame to have metrics as columns
+    df_pivoted = df.pivot_table(index=df.columns[0], columns=df.columns[1], values=df.columns[2], aggfunc='sum')
 
-    # Create a 'type' column to specify 'Sales' or 'Expenses'
-    df_melted['type'] = df_melted[df_melted.columns[0]]
+    # Reset index to convert multi-index DataFrame to regular DataFrame
+    df_pivoted = df_pivoted.reset_index()
 
-    # Rename columns
-    df_melted = df_melted[['year', 'type', 'value']]
+    # Fill missing values with 0
+    df_pivoted = df_pivoted.fillna(0)
+
+    # Rename columns if necessary (Optional)
+    df_pivoted.columns.name = None  # Remove the columns' name if exists
 
     # Write DataFrame to PostgreSQL
-    df_melted.to_sql('relianceprofitlost', engine, if_exists='replace', index=False)
+    df_pivoted.to_sql('relianceprofitlost', engine, if_exists='replace', index=False)
 
     print("Data inserted successfully into PostgreSQL!")
 except Exception as e:
     print(f"Error processing data or inserting into PostgreSQL: {e}")
+
