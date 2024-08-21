@@ -61,7 +61,7 @@ def clean_data(value):
     return value
 
 try:
-    # Read the CSV file into a DataFrame
+    # Read the CSV file into a DataFrame, handling the comma as a decimal separator
     df = pd.read_csv(csv_file_path, thousands=',', skipinitialspace=True)
 
     # Remove any leading/trailing spaces from column names
@@ -74,26 +74,18 @@ try:
     for col in df.columns[1:]:  # Skip the first column as it's text
         df[col] = df[col].apply(clean_data)
 
-    # Pivot DataFrame to have metrics as columns
-    df_pivoted = df.pivot_table(index=df.columns[0], columns=df.columns[1], values=df.columns[2], aggfunc='sum')
+    # Convert columns to appropriate types
+    df[df.columns[1:]] = df[df.columns[1:]].astype(float)
 
-    # Check if the DataFrame has a multi-level column index
-    if isinstance(df_pivoted.columns, pd.MultiIndex):
-        df_pivoted.columns = df_pivoted.columns.get_level_values(1)
-    else:
-        # If columns are not multi-level, just use the existing columns
-        df_pivoted.columns.name = None  # Remove the columns' name if exists
+    # Handle any remaining missing values or inappropriate data
+    df = df.fillna(0)  # Example: Fill missing values with 0, adjust as needed
 
-    # Reset index to convert multi-index DataFrame to regular DataFrame
-    df_pivoted = df_pivoted.reset_index()
+    # Transpose the DataFrame
+    df_transposed = df.transpose()
 
-    # Fill missing values with 0
-    df_pivoted = df_pivoted.fillna(0)
-
-    # Write DataFrame to PostgreSQL
-    df_pivoted.to_sql('relianceprofitlost', engine, if_exists='replace', index=False)
+    # Write Transposed DataFrame to PostgreSQL
+    df_transposed.to_sql('relianceprofitlost', engine, if_exists='replace', index=False)
 
     print("Data inserted successfully into PostgreSQL!")
 except Exception as e:
     print(f"Error processing data or inserting into PostgreSQL: {e}")
-
