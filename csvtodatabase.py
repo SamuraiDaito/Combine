@@ -77,8 +77,12 @@ try:
     # Pivot DataFrame to have metrics as columns
     df_pivoted = df.pivot_table(index=df.columns[0], columns=df.columns[1], values=df.columns[2], aggfunc='sum')
 
-    # Flatten the columns
-    df_pivoted.columns = df_pivoted.columns.get_level_values(1)
+    # Check if the DataFrame has a multi-level column index
+    if isinstance(df_pivoted.columns, pd.MultiIndex):
+        df_pivoted.columns = df_pivoted.columns.get_level_values(1)
+    else:
+        # If columns are not multi-level, just use the existing columns
+        df_pivoted.columns.name = None  # Remove the columns' name if exists
 
     # Reset index to convert multi-index DataFrame to regular DataFrame
     df_pivoted = df_pivoted.reset_index()
@@ -86,12 +90,10 @@ try:
     # Fill missing values with 0
     df_pivoted = df_pivoted.fillna(0)
 
-    # Rename columns if necessary (Optional)
-    df_pivoted.columns.name = None  # Remove the columns' name if exists
-
     # Write DataFrame to PostgreSQL
     df_pivoted.to_sql('relianceprofitlost', engine, if_exists='replace', index=False)
 
     print("Data inserted successfully into PostgreSQL!")
 except Exception as e:
     print(f"Error processing data or inserting into PostgreSQL: {e}")
+
