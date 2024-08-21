@@ -52,20 +52,18 @@ def clean_data(value):
     # Remove any unwanted symbols like +, %, commas
     if isinstance(value, str):
         value = value.replace("+", "").replace("%", "").replace(",", "").strip()
-        # Convert to integer if it's a number, otherwise return None or appropriate value
-        if value.isdigit():
-            return int(value)
-        else:
+        # Convert to integer or float if it's a number, otherwise return None
+        if value.replace('.', '', 1).isdigit():  # Check if value is numeric
             try:
-                # Try converting to float, which handles decimal values
-                return float(value)
+                return float(value)  # Use float to handle decimal values
             except ValueError:
                 return None
+        return None
     return value
 
 try:
-    # Read the CSV file into a DataFrame
-    df = pd.read_csv(csv_file_path)
+    # Read the CSV file into a DataFrame, handling the comma as a decimal separator
+    df = pd.read_csv(csv_file_path, thousands=',', skipinitialspace=True)
 
     # Remove any leading/trailing spaces from column names
     df.columns = [col.strip() for col in df.columns]
@@ -74,14 +72,12 @@ try:
     for col in df.columns:
         df[col] = df[col].apply(clean_data)
 
-    # Handle specific column types
-    # EPS in Rs column may have float values, so let's ensure it's treated as float
+    # Convert 'EPS in Rs' to float and handle missing values
     if 'EPS in Rs' in df.columns:
-        df['EPS in Rs'] = df['EPS in Rs'].astype(float)
+        df['EPS in Rs'] = df['EPS in Rs'].astype(float, errors='ignore')
 
-    # Drop columns if necessary or handle data types as per requirements
-    # Example: Drop rows where 'EPS in Rs' is completely missing if needed
-    df = df.dropna(subset=['EPS in Rs'])
+    # Handle any remaining missing values or inappropriate data
+    df = df.fillna(0)  # Example: Fill missing values with 0, adjust as needed
 
     # Write DataFrame to PostgreSQL
     df.to_sql('relianceprofitlost', engine, if_exists='replace', index=False)
