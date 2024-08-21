@@ -74,11 +74,11 @@ try:
     for col in df.columns[1:]:  # Skip the first column as it's text
         df[col] = df[col].apply(clean_data)
 
-    # Convert columns to appropriate types
-    df[df.columns[1:]] = df[df.columns[1:]].astype(float)
-
     # Pivot DataFrame to have metrics as columns
     df_pivoted = df.pivot_table(index=df.columns[0], columns=df.columns[1], values=df.columns[2], aggfunc='sum')
+
+    # Flatten the columns
+    df_pivoted.columns = df_pivoted.columns.get_level_values(1)
 
     # Reset index to convert multi-index DataFrame to regular DataFrame
     df_pivoted = df_pivoted.reset_index()
@@ -95,4 +95,3 @@ try:
     print("Data inserted successfully into PostgreSQL!")
 except Exception as e:
     print(f"Error processing data or inserting into PostgreSQL: {e}")
-
