@@ -32,7 +32,6 @@
 
 import pandas as pd
 from sqlalchemy import create_engine
-import numpy as np
 
 # Database connection parameters
 db_name = "concourse"
@@ -58,7 +57,7 @@ def clean_data(value):
                 return float(value)  # Use float to handle decimal values
             except ValueError:
                 return None
-        return None
+        return value  # Return text as is if it's not numeric
     return value
 
 try:
@@ -68,13 +67,15 @@ try:
     # Remove any leading/trailing spaces from column names
     df.columns = [col.strip() for col in df.columns]
 
+    # Ensure the first column is treated as text and other columns are treated as numeric
+    df.iloc[:, 0] = df.iloc[:, 0].astype(str)  # Convert the first column to string
+
     # Apply the cleaning function to all columns
-    for col in df.columns:
+    for col in df.columns[1:]:  # Skip the first column as it's text
         df[col] = df[col].apply(clean_data)
 
-    # Convert 'EPS in Rs' to float and handle missing values
-    if 'EPS in Rs' in df.columns:
-        df['EPS in Rs'] = df['EPS in Rs'].astype(float, errors='ignore')
+    # Convert columns to appropriate types
+    df[df.columns[1:]] = df[df.columns[1:]].astype(float)
 
     # Handle any remaining missing values or inappropriate data
     df = df.fillna(0)  # Example: Fill missing values with 0, adjust as needed
