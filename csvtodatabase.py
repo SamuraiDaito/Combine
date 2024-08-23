@@ -31,7 +31,7 @@
 #     print(f"Database connection failed: {e}")
 # new comment for testing
 import pandas as pd
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 
 # Database connection parameters
 db_name = "concourse"
@@ -74,8 +74,17 @@ try:
     # Handle missing or inappropriate values
     df = df.fillna(0)  # Replace missing values with 0 or adjust as necessary
 
-    # Write the cleaned DataFrame directly into PostgreSQL
-    df.to_sql('relianceprofitlost', engine, if_exists='replace', index=False)
+    # Extract the years to update
+    years_to_update = df['year'].tolist()
+
+    # Create a connection to the database
+    with engine.connect() as conn:
+        # Delete existing rows with matching years
+        delete_query = text("DELETE FROM relianceprofitlost WHERE year IN :years")
+        conn.execute(delete_query, {'years': tuple(years_to_update)})
+
+    # Append the new data after deleting existing rows
+    df.to_sql('relianceprofitlost', engine, if_exists='append', index=False)
 
     print("Data inserted successfully into PostgreSQL!")
 except Exception as e:
