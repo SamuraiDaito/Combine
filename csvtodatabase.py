@@ -75,7 +75,7 @@ try:
     df = df.fillna(0)  # Replace missing values with 0 or adjust as necessary
 
     # Extract the years to update
-    years_to_update = df['year'].tolist()
+    years_to_update = df["Year"].tolist()
 
     # Create a connection to the database
     with engine.connect() as conn:
