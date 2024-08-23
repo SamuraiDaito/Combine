@@ -83,6 +83,9 @@ try:
         delete_query = text('DELETE FROM relianceprofitlost WHERE "Year" IN :years')
         conn.execute(delete_query, {'years': tuple(years_to_update)})
 
+        # Commit the deletion operation to ensure data is cleared before new insertion
+        conn.commit()
+
     # Append the new data after deleting existing rows
     df.to_sql('relianceprofitlost', engine, if_exists='append', index=False)
 
