@@ -26,7 +26,7 @@ jobs:
             args:
               - -c
               - |
-                export VAULT_ADDR='http://192.168.3.109:8200'
+                export VAULT_ADDR='http://192.168.1.233:8200'
                 export VAULT_TOKEN='abcd1234'
                 Email=$(vault kv get -field=Email secret/screener)
                 Password=$(vault kv get -field=Password secret/screener)
