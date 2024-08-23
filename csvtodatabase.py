@@ -79,8 +79,8 @@ try:
 
     # Create a connection to the database
     with engine.connect() as conn:
-        # Delete existing rows with matching years
-        delete_query = text("DELETE FROM relianceprofitlost WHERE "Year" IN :years")
+        # Delete existing rows with matching years (double quotes around the column name)
+        delete_query = text('DELETE FROM relianceprofitlost WHERE "Year" IN :years')
         conn.execute(delete_query, {'years': tuple(years_to_update)})
 
     # Append the new data after deleting existing rows
